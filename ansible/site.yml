@@ -1,4 +1,4 @@
-- name: NODE CONTROLLER SYSTEM (FULL BOOTSTRAP)
+- name: NODE CONTROLLER SYSTEM (STABLE BOOTSTRAP)
   hosts: control
   become: yes
 
@@ -29,37 +29,26 @@
       enabled: yes
       state: started
 
-
   # =========================
-  # DOCKER
+  # DOCKER (SAFE INSTALL)
   # =========================
 
-  - name: Install Docker
+  - name: Install Docker (official script)
     shell: curl -fsSL https://get.docker.com | sh
+    args:
+      creates: /usr/bin/docker
 
-  - name: Enable Docker
+  - name: Start Docker service
     systemd:
       name: docker
       enabled: yes
       state: started
 
-
   # =========================
-  # K3S CLUSTER (SINGLE NODE)
-  # =========================
-
-  - name: Install k3s
-    shell: curl -sfL https://get.k3s.io | sh -
-
-
-  # =========================
-  # OPENWEBUI (UI PANEL)
+  # OPENWEBUI
   # =========================
 
-  - name: Pull OpenWebUI image
-    shell: docker pull ghcr.io/open-webui/open-webui:main
-
-  - name: Run OpenWebUI
+  - name: Run OpenWebUI container
     shell: |
       docker run -d \
         --name openwebui \
@@ -67,7 +56,8 @@
         -v open-webui:/app/backend/data \
         --restart always \
         ghcr.io/open-webui/open-webui:main
-
+    args:
+      creates: /var/lib/docker/volumes/open-webui
 
   # =========================
   # NODE CONTROLLER (CORE AGENT)
@@ -77,7 +67,6 @@
     file:
       path: /opt/node-controller
       state: directory
-      mode: '0755'
 
   - name: Create Node Controller script
     copy:
@@ -85,9 +74,8 @@
       mode: '0755'
       content: |
         #!/bin/bash
-
         while true; do
-          echo "[NODE CONTROLLER] alive"
+          echo "[Node Controller] alive"
           sleep 5
         done
 
