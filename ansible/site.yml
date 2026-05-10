@@ -1,11 +1,11 @@
-- name: NODE CONTROLLER SYSTEM (STABLE BOOTSTRAP)
-  hosts: control
+- name: NODE CONTROLLER SYSTEM (STABLE ORDERED BOOTSTRAP)
+  hosts: localhost
   become: yes
 
   tasks:
 
   # =========================
-  # BASE SYSTEM
+  # 1. BASE SYSTEM
   # =========================
 
   - name: Update system
@@ -29,26 +29,28 @@
       enabled: yes
       state: started
 
+
   # =========================
-  # DOCKER (SAFE INSTALL)
+  # 2. DOCKER (MUSI BYĆ PIERWSZY RUNTIME)
   # =========================
 
-  - name: Install Docker (official script)
+  - name: Install Docker
     shell: curl -fsSL https://get.docker.com | sh
     args:
       creates: /usr/bin/docker
 
-  - name: Start Docker service
+  - name: Start Docker
     systemd:
       name: docker
       enabled: yes
       state: started
 
+
   # =========================
-  # OPENWEBUI
+  # 3. OPENWEBUI (UI LAYER)
   # =========================
 
-  - name: Run OpenWebUI container
+  - name: Run OpenWebUI
     shell: |
       docker run -d \
         --name openwebui \
@@ -56,33 +58,24 @@
         -v open-webui:/app/backend/data \
         --restart always \
         ghcr.io/open-webui/open-webui:main
-    args:
-      creates: /var/lib/docker/volumes/open-webui
+
 
   # =========================
-  # NODE CONTROLLER (CORE AGENT)
+  # 4. NODE CONTROLLER (AGENT CORE)
   # =========================
 
-  - name: Create Node Controller directory
-    file:
-      path: /opt/node-controller
-      state: directory
-
-  - name: Create Node Controller script
-    copy:
-      dest: /opt/node-controller/controller.sh
-      mode: '0755'
-      content: |
-        #!/bin/bash
-        while true; do
-          echo "[Node Controller] alive"
-          sleep 5
-        done
-
-  - name: Run Node Controller container
+  - name: Run Node Controller
     shell: |
       docker run -d \
         --name node-controller \
         --restart always \
         ubuntu:22.04 \
         bash -c "while true; do echo node-controller alive; sleep 5; done"
+
+
+  # =========================
+  # 5. K3S (CLUSTER LAYER - LAST)
+  # =========================
+
+  - name: Install k3s
+    shell: curl -sfL https://get.k3s.io | sh -
