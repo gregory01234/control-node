@@ -1,0 +1,100 @@
+- name: NODE CONTROLLER SYSTEM (FULL BOOTSTRAP)
+  hosts: control
+  become: yes
+
+  tasks:
+
+  # =========================
+  # BASE SYSTEM
+  # =========================
+
+  - name: Update system
+    apt:
+      update_cache: yes
+      upgrade: dist
+
+  - name: Install base tools
+    apt:
+      name:
+        - curl
+        - git
+        - vim
+        - htop
+        - openssh-server
+      state: present
+
+  - name: Enable SSH
+    systemd:
+      name: ssh
+      enabled: yes
+      state: started
+
+
+  # =========================
+  # DOCKER
+  # =========================
+
+  - name: Install Docker
+    shell: curl -fsSL https://get.docker.com | sh
+
+  - name: Enable Docker
+    systemd:
+      name: docker
+      enabled: yes
+      state: started
+
+
+  # =========================
+  # K3S CLUSTER (SINGLE NODE)
+  # =========================
+
+  - name: Install k3s
+    shell: curl -sfL https://get.k3s.io | sh -
+
+
+  # =========================
+  # OPENWEBUI (UI PANEL)
+  # =========================
+
+  - name: Pull OpenWebUI image
+    shell: docker pull ghcr.io/open-webui/open-webui:main
+
+  - name: Run OpenWebUI
+    shell: |
+      docker run -d \
+        --name openwebui \
+        -p 3000:8080 \
+        -v open-webui:/app/backend/data \
+        --restart always \
+        ghcr.io/open-webui/open-webui:main
+
+
+  # =========================
+  # NODE CONTROLLER (CORE AGENT)
+  # =========================
+
+  - name: Create Node Controller directory
+    file:
+      path: /opt/node-controller
+      state: directory
+      mode: '0755'
+
+  - name: Create Node Controller script
+    copy:
+      dest: /opt/node-controller/controller.sh
+      mode: '0755'
+      content: |
+        #!/bin/bash
+
+        while true; do
+          echo "[NODE CONTROLLER] alive"
+          sleep 5
+        done
+
+  - name: Run Node Controller container
+    shell: |
+      docker run -d \
+        --name node-controller \
+        --restart always \
+        ubuntu:22.04 \
+        bash -c "while true; do echo node-controller alive; sleep 5; done"
