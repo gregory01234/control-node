@@ -1,93 +1,107 @@
 - name: CONTROL NODE FULL INSTALL (DOCKER + K3S + OLLAMA + NODE CONTROLLER)
   hosts: localhost
   become: yes
+  connection: local
 
   tasks:
 
-  # =========================
-  # 1. SYSTEM BASE
-  # =========================
+    # =========================
+    # SYSTEM BASE
+    # =========================
 
-  - name: Update system
-    apt:
-      update_cache: yes
-      upgrade: dist
+    - name: Update system
+      apt:
+        update_cache: yes
+        upgrade: dist
 
-  - name: Install base tools
-    apt:
-      name:
-        - curl
-        - git
-        - vim
-        - htop
-        - openssh-server
-      state: present
+    - name: Install base tools
+      apt:
+        name:
+          - curl
+          - git
+          - vim
+          - htop
+          - openssh-server
+        state: present
 
-  - name: Enable SSH
-    systemd:
-      name: ssh
-      enabled: yes
-      state: started
-
-
-  # =========================
-  # 2. DOCKER
-  # =========================
-
-  - name: Install Docker
-    shell: curl -fsSL https://get.docker.com | sh
-    args:
-      creates: /usr/bin/docker
-
-  - name: Start Docker
-    systemd:
-      name: docker
-      enabled: yes
-      state: started
+    - name: Enable SSH
+      systemd:
+        name: ssh
+        enabled: yes
+        state: started
 
 
-  # =========================
-  # 3. K3S CLUSTER
-  # =========================
+    # =========================
+    # 🟢 PYTHON BOOTSTRAP (TO JEST TO MIEJSCE)
+    # =========================
 
-  - name: Install K3s
-    shell: curl -sfL https://get.k3s.io | sh
-    args:
-      creates: /usr/local/bin/k3s
+    - name: Copy bootstrap script
+      copy:
+        src: "{{ playbook_dir }}/../bootstrap.py"
+        dest: /tmp/bootstrap.py
+        mode: '0755'
 
-
-  # =========================
-  # 4. OLLAMA (LOCAL AI MODEL RUNTIME)
-  # =========================
-
-  - name: Run Ollama container
-    shell: |
-      docker run -d \
-        --name ollama \
-        -p 11434:11434 \
-        -v ollama:/root/.ollama \
-        --restart always \
-        ollama/ollama
+    - name: Run bootstrap script
+      command: python3 /tmp/bootstrap.py
 
 
-  # =========================
-  # 5. NODE CONTROLLER
-  # =========================
+    # =========================
+    # DOCKER
+    # =========================
 
-  - name: Run Node Controller
-    shell: |
-      docker run -d \
-        --name node-controller \
-        -p 8080:8080 \
-        --restart always \
-        ubuntu:22.04 \
-        bash -c "while true; do echo node-controller alive; sleep 5; done"
+    - name: Install Docker
+      shell: curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Start Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
 
 
-  # =========================
-  # 6. INGRESS (BASIC K3S TRAEFIK ENABLED)
-  # =========================
+    # =========================
+    # K3S CLUSTER
+    # =========================
 
-  - name: Enable K3s ingress (Traefik already included)
-    shell: |
-      echo "K3s includes Traefik ingress by default"
+    - name: Install K3s
+      shell: curl -sfL https://get.k3s.io | sh
+      args:
+        creates: /usr/local/bin/k3s
+
+
+    # =========================
+    # OLLAMA
+    # =========================
+
+    - name: Run Ollama container
+      shell: |
+        docker run -d \
+          --name ollama \
+          -p 11434:11434 \
+          -v ollama:/root/.ollama \
+          --restart always \
+          ollama/ollama
+
+
+    # =========================
+    # NODE CONTROLLER
+    # =========================
+
+    - name: Run Node Controller
+      shell: |
+        docker run -d \
+          --name node-controller \
+          -p 8080:8080 \
+          --restart always \
+          ubuntu:22.04 \
+          bash -c "while true; do echo node-controller alive; sleep 5; done"
+
+
+    # =========================
+    # INGRESS
+    # =========================
+
+    - name: Enable K3s ingress (Traefik already included)
+      shell: echo "K3s includes Traefik ingress by default"
