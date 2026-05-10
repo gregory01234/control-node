@@ -1,11 +1,11 @@
-- name: NODE CONTROLLER SYSTEM (STABLE ORDERED BOOTSTRAP)
+- name: CONTROL NODE FULL INSTALL (DOCKER + K3S + OLLAMA + NODE CONTROLLER)
   hosts: localhost
   become: yes
 
   tasks:
 
   # =========================
-  # 1. BASE SYSTEM
+  # 1. SYSTEM BASE
   # =========================
 
   - name: Update system
@@ -31,7 +31,7 @@
 
 
   # =========================
-  # 2. DOCKER (MUSI BYĆ PIERWSZY RUNTIME)
+  # 2. DOCKER
   # =========================
 
   - name: Install Docker
@@ -47,35 +47,47 @@
 
 
   # =========================
-  # 3. OPENWEBUI (UI LAYER)
+  # 3. K3S CLUSTER
   # =========================
 
-  - name: Run OpenWebUI
+  - name: Install K3s
+    shell: curl -sfL https://get.k3s.io | sh
+    args:
+      creates: /usr/local/bin/k3s
+
+
+  # =========================
+  # 4. OLLAMA (LOCAL AI MODEL RUNTIME)
+  # =========================
+
+  - name: Run Ollama container
     shell: |
       docker run -d \
-        --name openwebui \
-        -p 3000:8080 \
-        -v open-webui:/app/backend/data \
+        --name ollama \
+        -p 11434:11434 \
+        -v ollama:/root/.ollama \
         --restart always \
-        ghcr.io/open-webui/open-webui:main
+        ollama/ollama
 
 
   # =========================
-  # 4. NODE CONTROLLER (AGENT CORE)
+  # 5. NODE CONTROLLER
   # =========================
 
   - name: Run Node Controller
     shell: |
       docker run -d \
         --name node-controller \
+        -p 8080:8080 \
         --restart always \
         ubuntu:22.04 \
         bash -c "while true; do echo node-controller alive; sleep 5; done"
 
 
   # =========================
-  # 5. K3S (CLUSTER LAYER - LAST)
+  # 6. INGRESS (BASIC K3S TRAEFIK ENABLED)
   # =========================
 
-  - name: Install k3s
-    shell: curl -sfL https://get.k3s.io | sh -
+  - name: Enable K3s ingress (Traefik already included)
+    shell: |
+      echo "K3s includes Traefik ingress by default"
