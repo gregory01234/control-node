@@ -17,11 +17,11 @@ sudo apt install -y ansible git
 # =========================
 # 3. CLONE REPOSITORY
 # =========================
-REPO_URL="https://github.com/TWOJ_LOGIN/ai-control-node.git"
+REPO_URL="https://github.com/gregory01234/control-node.git"
 
-if [ -d "ai-control-node" ]; then
+if [ -d "control-node" ]; then
     echo "Repo already exists, pulling updates..."
-    cd ai-control-node && git pull
+    cd control-node && git pull
     cd ..
 else
     git clone $REPO_URL
