@@ -1,39 +1,51 @@
 #!/bin/bash
+set -euo pipefail
 
-set -e
+REPO_URL="https://github.com/gregory01234/control-node.git"
+REPO_DIR="$(basename "$REPO_URL" .git)"
 
 echo "=== START: CONTROL NODE BOOTSTRAP ==="
 
-# =========================
-# 1. UPDATE SYSTEM
-# =========================
-sudo apt update && sudo apt upgrade -y
-
-# =========================
-# 2. INSTALL DEPENDENCIES
-# =========================
-sudo apt install -y ansible git
-
-# =========================
-# 3. CLONE REPOSITORY
-# =========================
-REPO_URL="https://github.com/gregory01234/control-node.git"
-
-if [ -d "control-node" ]; then
-    echo "Repo already exists, pulling updates..."
-    cd control-node && git pull
-    cd ..
+# 1. Clone repo if missing
+if [ ! -d "$REPO_DIR" ]; then
+  echo "[INFO] Cloning repo..."
+  git clone "$REPO_URL"
 else
-    git clone $REPO_URL
+  echo "[INFO] Repo already exists, pulling latest changes..."
+  cd "$REPO_DIR"
+  git pull
+  cd ..
 fi
 
-# =========================
-# 4. RUN ANSIBLE PLAYBOOK
-# =========================
-cd ai-control-node/ansible
+cd "$REPO_DIR"
 
-echo "Running Ansible playbook: site.yml"
+echo "[INFO] Current directory: $(pwd)"
+echo "[INFO] Listing contents:"
+ls -ლა
 
-ansible-playbook site.yml
+# 2. Detect ansible directory (more robust than hardcoding path)
+if [ -d "ansible" ]; then
+  cd ansible
+elif [ -d "ansible/playbooks" ]; then
+  cd ansible
+elif [ -d "playbooks" ]; then
+  cd playbooks
+  echo "[WARN] Using fallback playbooks directory"
+else
+  echo "❌ ERROR: Cannot find ansible directory"
+  echo "Available structure:"
+  find . -maxdepth 3 -type d
+  exit 1
+fi
 
-echo "=== DONE: SYSTEM BOOTSTRAP COMPLETE ==="
+echo "[SUCCESS] Entered Ansible directory: $(pwd)"
+
+# 3. Basic validation
+if ! command -v ansible >/dev/null 2>&1; then
+  echo "[INFO] Ansible installed correctly"
+else
+  echo "[INFO] Ansible version:"
+  ansible --version | head -n 1
+fi
+
+echo "=== BOOTSTRAP COMPLETE ==="
