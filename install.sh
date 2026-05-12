@@ -3,9 +3,9 @@ set -euo pipefail
 
 REPO_URL="https://github.com/gregory01234/control-node.git"
 REPO_DIR="control-node"
-BRANCH="bootstrap"
+BRANCH="bootstrap-core"
 
-echo "=== INSTALL (BOOTSTRAP BRANCH) ==="
+echo "=== INSTALL (BOOTSTRAP-CORE BRANCH) ==="
 
 rm -rf "$REPO_DIR"
 
@@ -15,4 +15,4 @@ cd "$REPO_DIR"
 
 echo "[OK] Repo cloned from branch: $BRANCH"
 echo "[INFO] Scripts:"
-ls -la scripts
+ls -la scripts 2>/dev/null || echo "No scripts directory found"
