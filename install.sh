@@ -3,24 +3,16 @@ set -euo pipefail
 
 REPO_URL="https://github.com/gregory01234/control-node.git"
 REPO_DIR="control-node"
+BRANCH="bootstrap"
 
-echo "=== INSTALL (CLEAN CLONE MODE) ==="
+echo "=== INSTALL (BOOTSTRAP BRANCH) ==="
 
-# 🔴 zawsze zaczynamy od czystego stanu
-if [ -d "$REPO_DIR" ]; then
-  echo "[INFO] Removing old repo..."
-  rm -rf "$REPO_DIR"
-fi
+rm -rf "$REPO_DIR"
 
-echo "[INFO] Cloning full repository..."
-git clone "$REPO_URL" "$REPO_DIR"
+git clone --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"
 
 cd "$REPO_DIR"
 
-echo "[OK] Repo fully cloned at: $(pwd)"
-
-# 🔵 opcjonalnie: tylko informacja, NIE uruchamiamy nic
-echo "[INFO] Available scripts:"
-ls -ლა scripts 2>/dev/null || echo "No scripts directory found"
-
-echo "=== INSTALL COMPLETE ==="
+echo "[OK] Repo cloned from branch: $BRANCH"
+echo "[INFO] Scripts:"
+ls -la scripts
