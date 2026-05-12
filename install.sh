@@ -6,46 +6,51 @@ REPO_DIR="$(basename "$REPO_URL" .git)"
 
 echo "=== START: CONTROL NODE BOOTSTRAP ==="
 
-# 1. Clone repo if missing
-if [ ! -d "$REPO_DIR" ]; then
-  echo "[INFO] Cloning repo..."
-  git clone "$REPO_URL"
-else
-  echo "[INFO] Repo already exists, pulling latest changes..."
+# 1. Clone or update repo
+if [ -d "$REPO_DIR" ]; then
+  echo "[INFO] Repo already exists → updating"
   cd "$REPO_DIR"
-  git pull
-  cd ..
+  git pull --ff-only
+else
+  echo "[INFO] Cloning repo"
+  git clone "$REPO_URL"
+  cd "$REPO_DIR"
 fi
 
-cd "$REPO_DIR"
+echo "[INFO] Working directory: $(pwd)"
 
-echo "[INFO] Current directory: $(pwd)"
-echo "[INFO] Listing contents:"
-ls -ლა
+# 2. Clean and safe listing (no alias issues, no weird encoding)
+echo "[INFO] Repository contents:"
+/bin/ls -la
 
-# 2. Detect ansible directory (more robust than hardcoding path)
+# 3. Detect Ansible directory safely
+ANSIBLE_DIR=""
+
 if [ -d "ansible" ]; then
-  cd ansible
+  ANSIBLE_DIR="ansible"
 elif [ -d "ansible/playbooks" ]; then
-  cd ansible
+  ANSIBLE_DIR="ansible"
 elif [ -d "playbooks" ]; then
-  cd playbooks
-  echo "[WARN] Using fallback playbooks directory"
-else
-  echo "❌ ERROR: Cannot find ansible directory"
-  echo "Available structure:"
-  find . -maxdepth 3 -type d
+  ANSIBLE_DIR="playbooks"
+fi
+
+if [ -z "$ANSIBLE_DIR" ]; then
+  echo "❌ ERROR: Cannot find ansible or playbooks directory"
+  echo "Available directories:"
+  find . -maxdepth 2 -type d
   exit 1
 fi
 
-echo "[SUCCESS] Entered Ansible directory: $(pwd)"
+cd "$ANSIBLE_DIR"
 
-# 3. Basic validation
-if ! command -v ansible >/dev/null 2>&1; then
-  echo "[INFO] Ansible installed correctly"
-else
-  echo "[INFO] Ansible version:"
+echo "[SUCCESS] Entered directory: $(pwd)"
+
+# 4. Check ansible installation
+if command -v ansible >/dev/null 2>&1; then
+  echo "[INFO] Ansible installed:"
   ansible --version | head -n 1
+else
+  echo "⚠️ Ansible not found (installation should have handled it earlier)"
 fi
 
 echo "=== BOOTSTRAP COMPLETE ==="
