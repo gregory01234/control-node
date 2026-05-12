@@ -6,6 +6,6 @@ echo "[DEPLOY] Running Ansible bootstrap..."
 
 ansible-playbook \
   -i ansible/inventory/hosts.ini \
-  ansible/playbooks/bootstrap-control-plane.yml
+  ansible-playbook ansible/site.yml
 
 echo "[DEPLOY] Finished."
